@@ -2,3 +2,6 @@
 -main Main
 -hl main.hl
 # -cmd build.bat
+
+# -main Api
+# --interp
