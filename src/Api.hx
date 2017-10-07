@@ -99,6 +99,34 @@ class Api {
 			}
 
 			if (c.instanciable) {
+				if (superClass == null)
+					classFields.push({
+						pos: null,
+						name: "__obj",
+						access: [],
+						kind: FVar(macro : GodotObject, null)
+					});
+				classFields.push({
+					pos: null,
+					name: "__construct",
+					access: [],
+					kind: FFun({
+						args: [],
+						ret: macro : GodotObject,
+						expr: macro return __create_object()
+					})
+				});
+				classFields.push({
+					pos: null,
+					name: "__create_object",
+					access: [AStatic],
+					kind: FFun({
+						args: [],
+						ret: macro : GodotObject,
+						expr: macro return null
+					})
+				});
+				// @:hlNative("std", "file_open") static function file_open( path : hl.Bytes, mode : Int, binary : Bool ) : FileHandle { return null; }
 				classFields.push({
 					pos: null,
 					name: "new",
@@ -106,7 +134,7 @@ class Api {
 					kind: FFun({
 						args: [],
 						ret: null,
-						expr: if (superClass != null) macro super() else macro {}
+						expr: if (superClass != null) macro super() else macro __obj = __construct()
 					})
 				});
 				classFields.push({
@@ -157,8 +185,12 @@ class Api {
 			while (parent != null) {
 				var c = outputClasses[parent.name];
 				for (f in c.t.fields) {
-					if (f.name != "new" && f.name != "destroy" && f.access.indexOf(AStatic) == -1)
-						parentFields.set(f.name, true);
+					switch f.kind {
+						case FFun(_):
+							if (f.name != "new" && f.name != "destroy" && f.access.indexOf(AStatic) == -1)
+								parentFields.set(f.name, true);
+						case _:
+					}
 				}
 				parent = c.p;
 			}
