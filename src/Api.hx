@@ -65,6 +65,11 @@ class Api {
 
 		var printer = new haxe.macro.Printer();
 		var outputClasses = new Map<String,{t:TypeDefinition, p:Null<TypePath>, e:Array<TypeDefinition>}>();
+		var glueClass = macro class Glue {
+			static function destroy(obj:GodotObject):Void;
+		}
+		glueClass.isExtern = true;
+		glueClass.meta = [{name: ":hlNative", pos: null, params: [macro "godot"]}];
 
 		for (c in classes) {
 			var className = stripName(c.name);
@@ -99,6 +104,13 @@ class Api {
 			}
 
 			if (c.instanciable) {
+				var factoryMethodName = '${className}_new';
+				glueClass.fields.push({
+					pos: null,
+					name: factoryMethodName,
+					kind: FFun({args: [], ret: macro : GodotObject, expr: null}),
+					access: [AStatic],
+				});
 				if (superClass == null)
 					classFields.push({
 						pos: null,
@@ -123,7 +135,7 @@ class Api {
 					kind: FFun({
 						args: [],
 						ret: macro : GodotObject,
-						expr: macro return null
+						expr: macro return Glue.$factoryMethodName()
 					})
 				});
 				// @:hlNative("std", "file_open") static function file_open( path : hl.Bytes, mode : Int, binary : Bool ) : FileHandle { return null; }
@@ -137,6 +149,8 @@ class Api {
 						expr: if (superClass != null) macro super() else macro __obj = __construct()
 					})
 				});
+
+				// TODO: a single should be enough?
 				classFields.push({
 					pos: null,
 					name: "destroy",
@@ -144,7 +158,7 @@ class Api {
 					kind: FFun({
 						args: [],
 						ret: null,
-						expr: macro {}
+						expr: macro Glue.destroy(__obj)
 					})
 				});
 			}
@@ -157,15 +171,27 @@ class Api {
 					}
 				}];
 
+				var methodName = escapeIdent(m.name);
+				var nativeMethodName = '${className}_${methodName}';
+				var expr = macro Glue.$nativeMethodName();
+				var isVoid = m.return_type == "void";
+
 				classFields.push({
 					pos: null,
-					name: escapeIdent(m.name),
+					name: methodName,
 					access: if (c.singleton) [APublic, AStatic] else [APublic],
 					kind: FFun({
 						args: args,
 						ret: convertType(m.return_type),
-						expr: macro throw "TODO"
+						expr: if (isVoid) expr else macro return $expr
 					})
+				});
+
+				glueClass.fields.push({
+					pos: null,
+					name: nativeMethodName,
+					kind: FFun({args: [], ret: convertType(m.return_type), expr: null}),
+					access: [AStatic],
 				});
 			}
 
@@ -245,5 +271,7 @@ class Api {
 				sys.io.File.saveContent('godot/${e.name}.hx', output.join("\n"));
 			}
 		}
+
+		sys.io.File.saveContent('Glue.hx', printer.printTypeDefinition(glueClass, false));
 	}
 }
