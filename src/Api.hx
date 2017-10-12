@@ -70,6 +70,11 @@ class Api {
 		}
 		glueClass.isExtern = true;
 		glueClass.meta = [{name: ":hlNative", pos: null, params: [macro "godot"]}];
+		var glueC = [
+			"#define HL_NAME(n) glue_##n",
+			"#include <hl.h>",
+			""
+		];
 
 		for (c in classes) {
 			var className = stripName(c.name);
@@ -193,6 +198,10 @@ class Api {
 					kind: FFun({args: [], ret: convertType(m.return_type), expr: null}),
 					access: [AStatic],
 				});
+
+				glueC.push('HL_PRIM void HL_NAME($nativeMethodName)() {');
+				glueC.push('}');
+				glueC.push("");
 			}
 
 			var classDef:TypeDefinition = {
@@ -277,5 +286,7 @@ class Api {
 			printer.printTypeDefinition(glueClass, false)
 		];
 		sys.io.File.saveContent('Glue.hx', output.join("\n"));
+
+		sys.io.File.saveContent('glue.c', glueC.join("\n"));
 	}
 }
