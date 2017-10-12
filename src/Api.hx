@@ -272,6 +272,10 @@ class Api {
 			}
 		}
 
-		sys.io.File.saveContent('Glue.hx', printer.printTypeDefinition(glueClass, false));
+		var output = [
+			"import godot.*;",
+			printer.printTypeDefinition(glueClass, false)
+		];
+		sys.io.File.saveContent('Glue.hx', output.join("\n"));
 	}
 }

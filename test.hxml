@@ -1,1 +1,3 @@
 --macro include("godot")
+-hl main.hl
+--no-output
