@@ -179,7 +179,7 @@ class Api {
 				classFields.push({
 					pos: null,
 					name: methodName,
-					access: if (c.singleton) [APublic, AStatic] else [APublic],
+					access: if (c.singleton) [APublic, AStatic, AInline] else [APublic, AInline],
 					kind: FFun({
 						args: args,
 						ret: convertType(m.return_type),
