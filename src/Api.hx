@@ -199,7 +199,11 @@ class Api {
 					access: [AStatic],
 				});
 
-				glueC.push('HL_PRIM void HL_NAME($nativeMethodName)() {');
+				glueC.push('HL_PRIM void HL_NAME($nativeMethodName)(godot_object *__obj) {');
+				glueC.push('\tstatic godot_method_bind *mb = NULL;');
+				glueC.push('\tif (mb == NULL)');
+				glueC.push('\t\tmb = godot_method_bind_get_method("${c.name}", "${m.name}");');
+				glueC.push('\tgodot_method_bind_ptrcall(mb, __obj, TODO, TODO);');
 				glueC.push('}');
 				glueC.push("");
 			}
